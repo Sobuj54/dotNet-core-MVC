@@ -13,9 +13,9 @@ namespace BulkyBookWeb.Data
         {
             //base.OnModelCreating(modelBuilder); 
             modelBuilder.Entity<Category>().HasData(
-                new Category { Id = 1, Name = "Clothing" },
-                new Category { Id = 2, Name = "Computer" },
-                new Category { Id = 3, Name = "Shoes" }
+                new Category { Id = 1, Name = "Clothing", DisplayOrder = 1 },
+                new Category { Id = 2, Name = "Computer" , DisplayOrder = 2},
+                new Category { Id = 3, Name = "Shoes", DisplayOrder = 3 }
                 );
         }
     }
