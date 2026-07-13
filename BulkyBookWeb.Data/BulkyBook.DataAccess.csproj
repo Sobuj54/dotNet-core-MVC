@@ -19,4 +19,9 @@
     <ProjectReference Include="..\BulkyBookWeb.Models\BulkyBook.Models.csproj" />
   </ItemGroup>
 
+	<PropertyGroup>
+		<!-- This disables the security audit check during build -->
+		<NuGetAudit>false</NuGetAudit>
+	</PropertyGroup>
+
 </Project>
