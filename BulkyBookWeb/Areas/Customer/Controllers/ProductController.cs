@@ -1,7 +1,9 @@
 ﻿using BulkyBook.Business.Services.IServices;
 using BulkyBook.DataAccess;
 using BulkyBook.Models;
+using BulkyBook.Models.ViewModel;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace BulkyBookWeb.Areas.Customer.Controllers
 {
@@ -9,29 +11,42 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
     public class ProductController : Controller
     {
         private readonly IProductService _productService;
+        private readonly ICategoryService _categoryService;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, ICategoryService categoryService)
         {
             _productService = productService;
+            _categoryService = categoryService;
         }
         public async Task<IActionResult> Index()
         {
             return View();
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Upsert()
         {
-            return View();
+            var categories = await _categoryService.GetAllCategoriesAsync();
+            ProductVM productVM = new()
+            {
+                Product = new Product(),
+                CategoryList = categories.Select(c => new SelectListItem
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString()
+                })
+            };
+
+            return View(productVM);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ActionName("Create")]
-        public async Task<IActionResult> CreatePost(Product product)
+        [ActionName("Upsert")]
+        public async Task<IActionResult> UpsertPost(Product product, IFormFile? file)
         {
             if (!ModelState.IsValid) return View();
 
-            await _productService.CreateProductAsync(product);
+            //await _productService.CreateProductAsync(product);
             TempData["success"] = "Product created successfully.";
             return RedirectToAction("Index");
         }
