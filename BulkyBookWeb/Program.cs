@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BulkyBook.DataAccess;
+using BulkyBook.Business.Services.IServices;
+using BulkyBook.Business.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,8 @@ builder.Services.AddDbContext<DBcontext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("SQLConnection"));
 });
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 var app = builder.Build();
 
