@@ -12,11 +12,13 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
     {
         private readonly IProductService _productService;
         private readonly ICategoryService _categoryService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ProductController(IProductService productService, ICategoryService categoryService)
+        public ProductController(IProductService productService, ICategoryService categoryService, IWebHostEnvironment webHostEnvironment)
         {
             _productService = productService;
             _categoryService = categoryService;
+            _webHostEnvironment = webHostEnvironment;
         }
         public async Task<IActionResult> Index()
         {
@@ -42,11 +44,42 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [ActionName("Upsert")]
-        public async Task<IActionResult> UpsertPost(Product product, IFormFile? file)
+        public async Task<IActionResult> UpsertPost(ProductVM productVM, IFormFile? file)
         {
-            if (!ModelState.IsValid) return View();
+            if (!ModelState.IsValid) {
+                var categories = await _categoryService.GetAllCategoriesAsync();
+                productVM = new()
+                {
+                    CategoryList = categories.Select(c => new SelectListItem
+                    {
+                        Text = c.Name,
+                        Value = c.Id.ToString()
+                    })
+                };
+                return View(productVM);
+            }
 
-            //await _productService.CreateProductAsync(product);
+            string wwwRootPath = _webHostEnvironment.WebRootPath;
+            if(file != null)
+            {
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                string productPath = Path.Combine("images", "products");
+                string finalPath = Path.Combine(wwwRootPath, productPath);
+
+                if (!Directory.Exists(finalPath))
+                    Directory.CreateDirectory(finalPath);
+
+                // save the image
+                string filePath = Path.Combine(finalPath, fileName);
+                using(var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                productVM.Product.ImageUrl = Path.Combine(@"\", productPath, fileName).Replace("\\", "/");
+            }
+
+            await _productService.CreateProductAsync(productVM.Product);
             TempData["success"] = "Product created successfully.";
             return RedirectToAction("Index");
         }

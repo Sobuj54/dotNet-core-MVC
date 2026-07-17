@@ -10,7 +10,7 @@
             data: 'id', "render": (data) => {
                 return `
                      <div class="d-flex justify-content-end gap-3">
-                        <a href="/customer/product/edit?id=${data}" class="btn btn-outline-success">
+                        <a href="/customer/product/upsert?id=${data}" class="btn btn-outline-success">
                             <i class="bi bi-pencil-square"></i> Edit
                         </a>
                         <a href="/customer/product/edit?id=${data}" class="btn btn-outline-danger">
