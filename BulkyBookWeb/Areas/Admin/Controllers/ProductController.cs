@@ -5,13 +5,14 @@ using BulkyBook.Models.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace BulkyBookWeb.Areas.Customer.Controllers
+namespace BulkyBookWeb.Areas.Admin.Controllers
 {
-    [Area("Customer")]
+    [Area("Admin")]
     public class ProductController : Controller
     {
         private readonly IProductService _productService;
         private readonly ICategoryService _categoryService;
+        // needed to access wwwroot folder
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         public ProductController(IProductService productService, ICategoryService categoryService, IWebHostEnvironment webHostEnvironment)
@@ -25,7 +26,7 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Upsert()
+        public async Task<IActionResult> Upsert(int? id)
         {
             var categories = await _categoryService.GetAllCategoriesAsync();
             ProductVM productVM = new()
@@ -38,7 +39,15 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
                 })
             };
 
-            return View(productVM);
+            if(id == null || id == 0)
+            {
+                return View(productVM);
+            }
+            else
+            {
+                productVM.Product = await _productService.GetProductByIdAsync(id.Value);
+                return View(productVM);
+            }
         }
 
         [HttpPost]
@@ -79,7 +88,15 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
                 productVM.Product.ImageUrl = Path.Combine(@"\", productPath, fileName).Replace("\\", "/");
             }
 
-            await _productService.CreateProductAsync(productVM.Product);
+            if (productVM.Product.Id == null || productVM.Product.Id == 0)
+            {
+                await _productService.CreateProductAsync(productVM.Product);
+            }
+            else
+            {
+                await _productService.UpdateProductAsync(productVM.Product);
+            }
+
             TempData["success"] = "Product created successfully.";
             return RedirectToAction("Index");
         }
@@ -111,31 +128,37 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
             return RedirectToAction("Index");
         }
 
+
+        [HttpDelete]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || id == 0)
+            if(id ==null || id == 0)
             {
-                return NotFound();
+                return Json( new { success = false, message = "Invalid Id" });
             }
 
-            var product = await _productService.GetProductByIdAsync(id.Value);
-            if (product == null)
+            var productToBeDeleted = await _productService.GetProductByIdAsync(id.Value);
+            if(productToBeDeleted == null)
             {
-                return NotFound();
+                return Json(new { success = false, message = "Error while deleting." });
             }
 
-            return View(product);
+            // delete product image if that exists
+            if(!string.IsNullOrEmpty(productToBeDeleted.ImageUrl))
+            {
+                var imagePath = Path.Combine(_webHostEnvironment.WebRootPath, productToBeDeleted.ImageUrl.TrimStart('\\', '/'));
+
+                if(System.IO.File.Exists(imagePath))
+                {
+                    System.IO.File.Delete(imagePath);
+                }
+            }
+
+            await _productService.DeleteProductAsync(id.Value);
+            return Json(new { success = true, message = "Delete successfull." });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [ActionName("Delete")]
-        public async Task<IActionResult> DeletePost(int id)
-        {
-            await _productService.DeleteProductAsync(id);
-            TempData["success"] = "Product deleted successfully.";
-            return RedirectToAction("Index");
-        }
+
 
         #region API CALLS
         public async Task<IActionResult> GetAll()
